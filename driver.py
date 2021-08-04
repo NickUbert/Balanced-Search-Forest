@@ -3,6 +3,7 @@ import random
 import math
 
 from bsf import BalancedSearchForest
+from avl import AVLTree
 
 
 def testRound(roundSize):
@@ -10,26 +11,18 @@ def testRound(roundSize):
 	sampleSize = math.floor(roundSize)
 	bsf = BalancedSearchForest()
 	#keys = [14,83,80,36,96,21,24,35,63,59,43,2,73,66,10,1,4,82,46,73]
-	keys = []
-	for i in range(sampleSize):
-		n = random.randint(0,sampleRange)
-		keys.append(n)
-
-	workingSet = [0,0,0,0,0,0,0,0]
-	totalA = time.perf_counter()
-	#Start test 
-
-	#Insert Keys
-	insertA = totalA
-	print(keys)
+	keys = random.sample(range(sampleRange),sampleSize)
 	for k in keys:
 		bsf.insert(k)
-	insertB = time.perf_counter()
+		bsf.printForest()
+		print("~")
 	bsf.printHeader()
-	
 	bsf.printForest()
+	print("REM")
 	for k in keys:
 		bsf.remove(k)
+
+	bsf.printForest()
 	bsf.printHeader()
 	return
 	#Search for keys
@@ -88,13 +81,7 @@ def startTest():
 
 	print(timeSets)
 
+
+
 #startTest()
-testRound(100)
-
-
-
-
-
-
-	
-	
+testRound(20)
