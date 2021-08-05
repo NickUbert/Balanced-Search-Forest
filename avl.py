@@ -337,7 +337,7 @@ class AVLTree():
         # first find
         node = self.find(key)
         
-        if not node is None:
+        if node is not None:
             self.elements_count -= 1
             
             #     There are three cases:
@@ -392,7 +392,21 @@ class AVLTree():
                 assert (node.right)
                 node.right.parent = parent 
             self.recompute_heights(parent)
+        
+        if self.root.key == node.key:
+            if node.left is None:
+                self.root = node.right
+                self.root.parent= None
+                self.recompute_heights(self.root)
+            else:
+                self.root = node.left
+                self.root.parent = None
+                self.recompute_heights(self.root)
+
         del node
+
+
+
         # rebalance
         node = parent
         while (node):

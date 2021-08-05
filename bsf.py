@@ -319,7 +319,7 @@ class BalancedSearchForest:
 	def printForest(self):
 		for i in range(len(self.directory)):
 			if self.directory[i].root is not None:
-				print(i,self.treeSizes[i],":",end='')
+				print(i,self.treeSizes[i],":",self.directory[i].root.key,end='')
 				print(self.directory[i].postorder(self.directory[i].root))			
 
 # DO a full trace, the issue goes deep in removes. 
