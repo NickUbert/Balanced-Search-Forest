@@ -6,52 +6,48 @@ from bsf import BalancedSearchForest
 from avl import AVLTree
 
 
-def testRound(roundSize):
-	sampleRange = 1000
+def testRound(struc, roundSize):
+	workingSet = [0]*8
+	
 	sampleSize = math.floor(roundSize)
-	bsf = BalancedSearchForest()
-	#keys = [14,83,80,36,96,21,24,35,63,59,43,2,73,66,10,1,4,82,46,73]
-	keys = random.sample(range(sampleRange),sampleSize)
-	for k in keys:
-		bsf.insert(k)
-		bsf.printForest()
-		print("~")
-	bsf.printHeader()
-	bsf.printForest()
-	print("REM")
-	for k in keys:
-		bsf.remove(k)
+	sampleRange = 1000000000
 
-	bsf.printForest()
-	bsf.printHeader()
-	return
+	keys = random.sample(range(sampleRange),sampleSize)
+
+	insertA = time.perf_counter()
+	for k in keys:
+		struc.insert(k)
+	insertB = time.perf_counter()
+	
 	#Search for keys
 	memberA = time.perf_counter()
 	for k in keys:
-		bsf.member(k)
+		struc.member(k)
 	memberB = time.perf_counter()
-
+	
 	minA = time.perf_counter()
-	bsf.minimum()
+	struc.minimum()
 	minB = time.perf_counter()
 
 	maxA = time.perf_counter()
-	bsf.maximum()
+	struc.maximum()
 	maxB = time.perf_counter()
 
 	predA = time.perf_counter()
 	for k in keys:
-		bsf.predecessor(k)
+		struc.predecessor(k)
 	predB = time.perf_counter()
 
 	sucA = time.perf_counter()
 	for k in keys:
-		bsf.successor(k)
+		struc.successor(k)
 	sucB = time.perf_counter()
 
 	removeA = time.perf_counter()
-	
+	for k in keys:
+		struc.remove(k)
 	removeB = time.perf_counter()
+	totalA = insertA
 	totalB = removeB
 
 	workingSet[0] = insertB - insertA
@@ -63,25 +59,34 @@ def testRound(roundSize):
 	workingSet[6] = removeB - removeA
 	workingSet[7] = totalB - totalA
 	print(workingSet)
-	bsf.printHeader()
+
 	return workingSet
 
 def startTest():
 	#first index size catgory
 	#second index test round
 	#third index test category
-
+	bsf = BalancedSearchForest()
+	avl = AVLTree()
+	strucs = [bsf,avl]
 	timeSets =[]
 	base = 10
-	numSizes = 5
-	for i in range(numSizes):
-		timeSets.append([])
-		print(math.pow(base,i),":")
-		timeSets[i].append(testRound(math.pow(base,i)))	
+	numSizes = 8
+	index = 0
+	for s in strucs:
+		bsf = BalancedSearchForest()
+		avl = AVLTree()
+		for i in range(numSizes):
+			timeSets.append([])
+			print(math.pow(base,i),":")
+			timeSets[i].append(testRound(s, math.pow(base,i)))
+		if index == 0:
+			print("@@@@@@@@@@@@@", s.base)
+		index+=1
 
-	print(timeSets)
+
+	#print(timeSets)
 
 
 
-#startTest()
-testRound(20)
+startTest()

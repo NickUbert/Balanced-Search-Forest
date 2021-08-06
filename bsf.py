@@ -67,8 +67,10 @@ class BalancedSearchForest:
 
 	
 		self.incrementForestSize() 
-		#CHANGE TO U
-		self.base = math.floor(self.n/10)
+		u = self.b - self.a
+		u = abs(u)
+		#self.base = math.floor(math.sqrt(u/self.n))
+		
 		if self.treeSizes[index] > self.t+1:
 				self.balance()	
 
@@ -81,6 +83,81 @@ class BalancedSearchForest:
 		index = self.getIndex(key)
 		self.deleteInTree(index, key)
 		self.decrementForestSize()
+		
+	def emptyCheck(self):
+		sectionSize = math.ceil((self.k + 2)/4)
+		
+
+	def minimum(self):
+		if self.n == 0:
+			return None
+		index = 0
+		while self.directory[index].root is None:
+			index += 1
+		return self.treeMin(index)
+
+	def maximum(self):
+		if self.n == 0:
+			return None
+		index = self.k+1
+		while self.directory[index].root is None:
+			index -= 1
+		return self.treeMax(index)
+
+	def successor(self, key):
+		node = self.member(key)
+		if node != None:
+			index = self.getIndex(key)
+			m = self.treeMax(index)
+			if m != node:
+				#Tree search
+				if node.right != None:
+					return self.nodeMin(node.right)
+				
+				p = node.parent
+				while p != None and node == p.right:
+					node = p
+					p = p.parent
+
+				return p
+			else:
+				#Forest Search
+				index += 1
+				while index <= self.k+1 and self.directory[index].root is None:
+					index += 1
+
+				if index == self.k+2:
+					return None
+
+				return self.treeMin(index)
+
+	def predecessor(self, key):
+		node = self.member(key)
+		if node != None:
+			index = self.getIndex(key)
+			m = self.treeMin(index)
+			if m != node:
+				#Tree search
+				if node.left != None:
+					return self.nodeMax(node.left)
+
+				p = node.parent
+				while p != None and node == p.left:
+					node = p
+					p = p.parent
+				
+				return p
+			else:
+				#Forest Search
+				index -= 1
+				while index >= 0 and self.directory[index].root is None:
+					index -= 1
+
+				if index < 0:
+					return None
+
+				return self.treeMax(index)
+		return None
 
 
 
@@ -96,6 +173,7 @@ class BalancedSearchForest:
 	def balance(self):
 		treeRatings = [0]*(self.k+2)
 		self.balances+=1
+		self.base = math.floor(self.n/10)
 		
 		#Interpret Phase
 		for i in range(self.k+2):
@@ -158,7 +236,6 @@ class BalancedSearchForest:
 				self.tempDis = []
 				self.validateTree(self.directory[i].root, i)
 				for dis in self.tempDis:
-					print("DEL",i, dis)
 					self.deleteInTree(i, dis)
 					self.displacements.append(dis)
 		
@@ -177,7 +254,6 @@ class BalancedSearchForest:
 
 		for dis in self.displacements:	
 			exp = self.getIndex(dis)
-			print("INS", dis, exp)
 			self.insertInTree(exp,dis)
 
 	def validateTree(self, node, index):
@@ -224,11 +300,23 @@ class BalancedSearchForest:
 
 		return (int)((key-self.a) // self.l) + 1 
 
-	def minNode(self, index):
+	def treeMin(self, index):
 		return self.directory[index].minimum()
 		
-	def maxNode(self, index):
+	def treeMax(self, index):
 		return self.directory[index].maximum()
+
+	def nodeMin(self, node):
+		while node.left is not None:
+			node = node.left
+
+		return node
+
+	def nodeMax(self, node):
+		while node.right is not None:
+			node = node.right
+
+		return node 
 
 	def incrementTreeSize(self, index):
 		self.treeSizes[index] += 1
@@ -239,14 +327,14 @@ class BalancedSearchForest:
 	def incrementForestSize(self):
 		self.n += 1
 		if self.n>1:
-			self.t = math.floor(math.log2(self.n))
+			self.t = math.floor(math.sqrt(self.n))
 		else:
 			self.t = 1
 
 	def decrementForestSize(self):
 		self.n -= 1
 		if self.n>0:
-			self.t = math.floor(math.log2(self.n)) 
+			self.t = math.floor(math.sqrt(self.n)) 
 		else:
 			self.t = 0
 
@@ -272,19 +360,16 @@ class BalancedSearchForest:
 
 		optionB = 0
 		if self.treeSizes[self.k+1] != 0:
-				newB = self.minNode(self.k+1).key
+				newB = self.treeMin(self.k+1).key
 				extra = self.l
-				if self.treeSizes[self.k+1] > self.t:
-					#This is the overflow tree so we add extra padding
-					extra = self.l*2
-				optionB = newB + extra 
+				optionB = newB + self.l*2 
 
 		if optionB == 0 and optionA == 0:
 			index = self.k
 			while index >= 0 and self.treeSizes[index] == 0:
 				index -= 1
 
-			self.b = self.minNode(index)
+			self.b = self.treeMin(index)
 			return
 
 		choice = max(optionB, optionA)
@@ -322,6 +407,3 @@ class BalancedSearchForest:
 				print(i,self.treeSizes[i],":",self.directory[i].root.key,end='')
 				print(self.directory[i].postorder(self.directory[i].root))			
 
-# DO a full trace, the issue goes deep in removes. 
-#We are reporting deleting a node but it remains present
-#tree size still gets decremented
