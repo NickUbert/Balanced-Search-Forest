@@ -10,8 +10,6 @@ med_rating = 1
 high_rating = 2
 full_rating = 5
 
-
-
 low_adj = 1
 med_adj = 2
 large_adj = 3
@@ -66,26 +64,65 @@ class BalancedSearchForest:
 			
 
 	
-		self.incrementForestSize() 
-		u = self.b - self.a
-		u = abs(u)
-		#self.base = math.floor(math.sqrt(u/self.n))
-		
+		self.incrementForestSize() 		
 		if self.treeSizes[index] > self.t+1:
-				self.balance()	
+				self.overflowBalance(index)	
 
 
 	def member(self, key):
-		index = self.getIndex(key)
+		if key < 0:
+			return
+		else:
+			index = self.getIndex(key)
+
 		return self.directory[index].member(key)
+	
 
 	def remove(self, key):
 		index = self.getIndex(key)
 		self.deleteInTree(index, key)
 		self.decrementForestSize()
+
+		if self.treeSizes[index] == 0:
+			self.emptyCheck(index)
 		
-	def emptyCheck(self):
-		sectionSize = math.ceil((self.k + 2)/4)
+	def emptyCheck(self,index):
+		if self.n == 0:
+			return
+		sectionSize = math.ceil(math.log2(self.k + 2))
+		if index < sectionSize:
+			i = 0
+			while i < sectionSize:
+				if self.treeSizes[i] != 0:
+					return
+				i += 1
+			self.emptyBalance(0)
+
+		elif index > self.k+2 - sectionSize:
+			i = self.k+2 - sectionSize
+			while i < self.k+2:
+				if self.treeSizes[i] != 0:
+					return
+				i += 1
+			self.emptyBalance(2)
+
+		else:
+			i = sectionSize
+			while i < self.k+2 - sectionSize:
+				if self.treeSizes[i] != 0:
+					return 
+				i += 1 
+			self.emptyBalance(1)
+		
+
+	def emptyBalance(self,section):
+		if section == 0:
+			self.adjustA(1)
+		if section == 1:
+			self.adjustL(self.l*2)
+		if section == 3:
+			self.adjustB(-1)
+		self.reassign()
 		
 
 	def minimum(self):
@@ -130,11 +167,12 @@ class BalancedSearchForest:
 					return None
 
 				return self.treeMin(index)
+		return None
 
 	def predecessor(self, key):
 		node = self.member(key)
 		if node != None:
-			index = self.getIndex(key)
+			index = self.getIndex(node.key)
 			m = self.treeMin(index)
 			if m != node:
 				#Tree search
@@ -161,26 +199,117 @@ class BalancedSearchForest:
 
 
 
+	def overflowBalance(self, index):
+		if self.treeSizes[index] > 3:
+			if index == 0:
+				self.adjustA(-1)
+			elif index == self.k+1:
+				self.adjustB(1)
+			else:
+				a = self.treeMin(index).key
+				#Route 1
+				b = self.directory[index].root.key
+
+				self.adjustL(b-a)
+		else:
+			self.adjustL(self.l/2)
+
+		self.reassign()
+
+	def reassign(self):
+		self.displacements = []
+		for i in range(len(self.directory)):
+			if self.directory[i].root is not None:
+				self.tempDis = []
+				self.validateTree(self.directory[i].root, i)
+				for dis in self.tempDis:
+					self.deleteInTree(i, dis)
+					self.displacements.append(dis)
+			
+		newDir = []
+		newSizes = []
+		for i in range(self.k+2):
+			newDir.append(AVLTree())
+			newSizes.append(0)
+
+		for i in range(min(self.k+2, len(self.directory))):
+			newDir[i] = self.directory[i]
+			newSizes[i] = self.treeSizes[i]
+
+		self.directory = newDir
+		self.treeSizes = newSizes
+		for dis in self.displacements:	
+			exp = self.getIndex(dis)
+			self.insertInTree(exp,dis)
+
+	def adjustL(self, val):
+		self.l = val
+		forestRange = self.b - self.a
+		self.k = math.ceil(forestRange/self.l)
+		if self.k > forestRange:
+			self.k = math.floor(forestRange)
+			self.l = 1
+
+	def adjustA(self, direction):
+		a = self.a 
+		if direction < 0:
+			#Growing range
+			optionA = math.floor(self.n * math.log(self.n)) * self.l
+			optionB = self.treeMax(0)
+			if optionB is not None:
+				a -= max(optionA,optionB.key)
+			else:
+				a -= optionA
+			
+			if a < 0:
+				a = 0
+		else:
+			#Shrinking range
+			a += math.ceil(math.log2(self.k + 2))
+			if a > self.b:
+				return
+
+		self.a = a
+		self.k = math.ceil((self.b-self.a)/self.l)
+
+	def adjustB(self,direction):
+		b = self.b
+		if direction > 0:
+			#Growing Range
+			optionA = math.floor(self.n * math.log(self.n)) * self.l
+			optionB = self.treeMin(self.k+1)
+			if optionB is not None:
+				b += max(optionA, optionB.key)
+			else:
+				b += optionA
+		else:
+			#Shrinking Range
+			b -= math.ceil(math.log2(self.k+2))
+			if b < self.a:
+				return
+		self.b = b
+		self.k = math.ceil((self.b-self.a)/self.l)
+
 	def insertInTree(self, index, key):
-			self.incrementTreeSize(index)
-			self.directory[index].insert(key)
+		self.incrementTreeSize(index)
+		self.directory[index].insert(key)
 		
 
 	def deleteInTree(self, index, key):
 		self.decrementTreeSize(index)	
 		self.directory[index].remove(key)
 
-	def balance(self):
+	def balance0(self):
 		treeRatings = [0]*(self.k+2)
 		self.balances+=1
-		self.base = math.floor(self.n/10)
+		self.base = math.floor(self.n * math.log(self.n))
 		
 		#Interpret Phase
 		for i in range(self.k+2):
 			treeRatings[i] = self.treeRating(i)
 
 		#Partition Phase
-		sectionSize = math.ceil((self.k + 2)/4)
+		sectionSize = math.ceil(math.log2(self.k + 2))
 		sections = [0,0,0]
 		index = 0
 		while index < sectionSize:
@@ -200,18 +329,18 @@ class BalancedSearchForest:
 		sections[2] /= sectionSize
 
 		#Restructure Phase
-		if sections[0] >= full_rating/3:
+		if sections[0] >= full_rating/2:
 			self.adjustA(large_adj+self.base)
-		elif sections[0] >= full_rating/4:
+		elif sections[0] >= full_rating/3:
 			self.adjustA(med_adj+self.base)
 		elif sections[0] == empty_rating:
 			self.adjustA(-1 * (sectionSize))
 		else:
 			self.adjustA(low_adj+self.base)
 		
-		if sections[2] >= full_rating/3:
+		if sections[2] >= full_rating/2:
 			self.adjustB(large_adj+self.base)
-		elif sections[2] >= full_rating/4:
+		elif sections[2] >= full_rating/3:
 			self.adjustB(med_adj+self.base)
 		elif sections[2] == empty_rating:
 			self.adjustB(-1 * (sectionSize))
@@ -228,33 +357,7 @@ class BalancedSearchForest:
 		else:
 			self.adjustK(low_adj+self.base)
 
-		#Reassign
-
-		self.displacements = []
-		for i in range(len(self.directory)):
-			if self.directory[i].root is not None:
-				self.tempDis = []
-				self.validateTree(self.directory[i].root, i)
-				for dis in self.tempDis:
-					self.deleteInTree(i, dis)
-					self.displacements.append(dis)
-		
-		newDir = []
-		newSizes = []
-		for i in range(self.k+2):
-			newDir.append(AVLTree())
-			newSizes.append(0)
-
-		for i in range(min(self.k+2, len(self.directory))):
-			newDir[i] = self.directory[i]
-			newSizes[i] = self.treeSizes[i]
-
-		self.directory = newDir
-		self.treeSizes = newSizes
-
-		for dis in self.displacements:	
-			exp = self.getIndex(dis)
-			self.insertInTree(exp,dis)
+		self.reassign()
 
 	def validateTree(self, node, index):
 		if node.left is not None:
@@ -288,10 +391,11 @@ class BalancedSearchForest:
 			return low_rating
 
 
-
-
 	def getIndex(self, key):
 		#pre: key is unique, valid, and within a and b 
+		if self.n == 1:
+			return 1 
+
 		if key < self.a:
 			return 0
 
@@ -301,10 +405,14 @@ class BalancedSearchForest:
 		return (int)((key-self.a) // self.l) + 1 
 
 	def treeMin(self, index):
-		return self.directory[index].minimum()
+		if self.directory[index].root is not None:
+			return self.directory[index].minimum()
+		return None
 		
 	def treeMax(self, index):
-		return self.directory[index].maximum()
+		if self.directory[index].root is not None:
+			return self.directory[index].maximum()
+		return None
 
 	def nodeMin(self, node):
 		while node.left is not None:
@@ -327,18 +435,21 @@ class BalancedSearchForest:
 	def incrementForestSize(self):
 		self.n += 1
 		if self.n>1:
-			self.t = math.floor(math.sqrt(self.n))
+			self.t = self.calcThreshold()
 		else:
 			self.t = 1
 
 	def decrementForestSize(self):
 		self.n -= 1
 		if self.n>0:
-			self.t = math.floor(math.sqrt(self.n)) 
+			self.t = self.calcThreshold()
 		else:
-			self.t = 0
+			self.t = 1
 
-	def adjustA(self, degree):
+	def calcThreshold(self):
+		return math.ceil(math.log2(self.n))
+
+	def adjustA0(self, degree):
 		if (self.a - (self.l * degree)) < self.b:
 			self.a -= (self.l * degree)
 
@@ -346,7 +457,7 @@ class BalancedSearchForest:
 			self.a = 0
 
 		
-	def adjustB(self, degree):
+	def adjustB0(self, degree):
 		optionA = self.b + (self.l * degree)
 		#Shrink
 		if degree < 0:
@@ -392,7 +503,6 @@ class BalancedSearchForest:
 
 
 
-
 	def printHeader(self):
 		print(self.a,"-->",self.b)
 		print("n:",self.n)
@@ -405,5 +515,4 @@ class BalancedSearchForest:
 		for i in range(len(self.directory)):
 			if self.directory[i].root is not None:
 				print(i,self.treeSizes[i],":",self.directory[i].root.key,end='')
-				print(self.directory[i].postorder(self.directory[i].root))			
-
+				print(self.directory[i].postorder(self.directory[i].root))
