@@ -13,36 +13,48 @@ def testRound(struc, roundSize):
 	sampleRange = 1000000000
 
 	keys = random.sample(range(sampleRange),sampleSize)
+	opKeys = keys
+	i = len(keys)//2
+	while i < len(keys):
+		opKeys[i] = random.randint(0,sampleRange)
+		i+=1
 
+	print("Insert")
 	insertA = time.perf_counter()
 	for k in keys:
 		struc.insert(k)
 	insertB = time.perf_counter()
 	
 	#Search for keys
+	print("Search")
 	memberA = time.perf_counter()
-	for k in keys:
+	for k in opKeys:
 		struc.member(k)
 	memberB = time.perf_counter()
 	
+	print("Min")
 	minA = time.perf_counter()
 	struc.minimum()
 	minB = time.perf_counter()
 
+	print("Max")
 	maxA = time.perf_counter()
 	struc.maximum()
 	maxB = time.perf_counter()
 
+	print("Pred")
 	predA = time.perf_counter()
-	for k in keys:
+	for k in opKeys:
 		struc.predecessor(k)
 	predB = time.perf_counter()
 
+	print("Succ")
 	sucA = time.perf_counter()
-	for k in keys:
+	for k in opKeys:
 		struc.successor(k)
 	sucB = time.perf_counter()
 
+	print("del")
 	removeA = time.perf_counter()
 	for k in keys:
 		struc.remove(k)
@@ -81,7 +93,7 @@ def startTest():
 			print(math.pow(base,i),":")
 			timeSets[i].append(testRound(s, math.pow(base,i)))
 		if index == 0:
-			print("@@@@@@@@@@@@@", s.base)
+			print("@@@@@@@@@@@@@", s.balances, s.k)
 		index+=1
 
 
