@@ -92,8 +92,9 @@ def startTest():
 			timeSets.append([])
 			print(math.pow(base,i),":")
 			timeSets[i].append(testRound(s, math.pow(base,i)))
-		if index == 0:
-			print("@@@@@@@@@@@@@", s.balances, s.k)
+			if index == 0:
+				print("@@@@@@@@@@@@@", s.balances, s.k, s.n)
+		
 		index+=1
 
 
