@@ -12,7 +12,10 @@ def testRound(struc, roundSize):
 	sampleSize = math.floor(roundSize)
 	sampleRange = 1000000000
 
-	keys = random.sample(range(sampleRange),sampleSize)
+	keys = []
+	for i in range(sampleSize):
+		keys.append(random.randint(0,sampleRange))
+
 	opKeys = keys
 	i = len(keys)//2
 	while i < len(keys):
@@ -83,7 +86,7 @@ def startTest():
 	strucs = [bsf,avl]
 	timeSets =[]
 	base = 10
-	numSizes = 8
+	numSizes = 9
 	index = 0
 	for s in strucs:
 		bsf = BalancedSearchForest()

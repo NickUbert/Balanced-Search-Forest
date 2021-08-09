@@ -7,7 +7,7 @@ import sys
 class BalancedSearchForest:
 
 	def __init__(self):
-		self.directory = [AVLTree(),AVLTree(),AVLTree()]
+		self.directory = [None,None,None]
 		self.treeSizes = [0,0,0]
 		self.a = 0
 		self.b = 0
@@ -22,7 +22,6 @@ class BalancedSearchForest:
 	"""
 	Insert:
 	Insert a key into the appropriate tree if it is positive and unique
-
 	Input: key value
 	Output: void 
 	"""
@@ -71,7 +70,6 @@ class BalancedSearchForest:
 	"""
 	Member:
 	Search the appropriate tree to see if a key exists in the forest 
-
 	Input: key value
 	Output: if key exists, return the node. Else return None. If input
 	is not valid return void
@@ -82,32 +80,34 @@ class BalancedSearchForest:
 			return 
 		else:
 			index = self.getIndex(key)
-
+		if self.directory[index] is None:
+			return None
 		return self.directory[index].member(key)
 	
 	"""
 	Remove:
 	Delete a node if it exists in the forest. 
 	If the last node is removed from a tree, check if balancing is needed
-
 	Input: key value
 	Output: void
 	"""
 	def remove(self, key):
 		index = self.getIndex(key)
+		if self.directory[index] is None:
+			return 
 		startCount = self.directory[index].elements_count
 		self.deleteInTree(index, key)
-		if startCount > self.directory[index].elements_count:
+		if self.directory[index] is None or (startCount > self.directory[index].elements_count):
 			self.decrementForestSize()
 
 		if self.treeSizes[index] == 0:
+			self.directory[index] = None
 			self.emptyCheck(index)
 
 
 	"""
 	Minimum:
 	Return the smallest key value found in the forest
-
 	Input: none
 	Output: if forest is empty, return none. Else return the node with the smallest key value
 	"""
@@ -115,7 +115,7 @@ class BalancedSearchForest:
 		if self.n == 0:
 			return None
 		index = 0
-		while self.directory[index].root is None:
+		while self.directory[index] is None:
 			index += 1
 		return self.treeMin(index)
 
@@ -123,7 +123,6 @@ class BalancedSearchForest:
 	"""
 	Maximum:
 	Return the largest key value found in the forest
-
 	Input: none
 	Output: if the forest is empty, return none. Else return the node with the largest key value
 	"""
@@ -131,14 +130,13 @@ class BalancedSearchForest:
 		if self.n == 0:
 			return None
 		index = self.k+1
-		while self.directory[index].root is None:
+		while self.directory[index] is None:
 			index -= 1
 		return self.treeMax(index)
 
 	"""
 	Successor:
 	If a key k exists in a totally ordered set, return the next key larger than k
-
 	Input: key value
 	Output: if key exists and isn't the maximum value in the forest, return the successor node
 	Else return None
@@ -162,7 +160,7 @@ class BalancedSearchForest:
 			else:
 				#Forest Search
 				index += 1
-				while index <= self.k+1 and self.directory[index].root is None:
+				while index <= self.k+1 and self.directory[index] is None:
 					index += 1
 
 				if index == self.k+2:
@@ -174,7 +172,6 @@ class BalancedSearchForest:
 	"""
 	Predecessor:
 	If a key k exists in a totally ordered set, return the next key smaller than k
-
 	Input: key value
 	Output: if a key exists and is not the minimum value of the forest, return the predecessor node
 	Else return None
@@ -198,7 +195,7 @@ class BalancedSearchForest:
 			else:
 				#Forest Search
 				index -= 1
-				while index >= 0 and self.directory[index].root is None:
+				while index >= 0 and self.directory[index] is None:
 					index -= 1
 
 				if index < 0:
@@ -269,7 +266,6 @@ class BalancedSearchForest:
 	After these values are updated, we reassign displaced nodes
 	To track the recursive depth of the balancing process,
 	balanceDepth is decremented after a successful reassignment
-
 	Input: index of offending tree
 	Output: void
 	"""
@@ -323,24 +319,20 @@ class BalancedSearchForest:
 	It is possible that while inserting displaced nodes, another balance is triggered.
 	Since instance lists are used to keep track of displaced nodes and indices are calculated on the fly,
 	All nodes will eventually get re-inserted properly no matter how many recursive layers are used. 
-
 	Input: none
 	Output: void 
 	"""
 	def reassign(self):
 		displacements = []
 		for i in range(len(self.directory)):
-			if self.directory[i].root is not None:
+			if self.directory[i] is not None:
 				tempDis = []
 				self.validateTree(self.directory[i].root, i, tempDis)
 				for dis in tempDis:
 					self.deleteInTree(i, dis)
 					displacements.append(dis)
-		newDir = []
-		newSizes = []
-		for i in range(self.k+2):
-			newDir.append(AVLTree())
-			newSizes.append(0)
+		newDir = [None] * (self.k+2)
+		newSizes = [0] * (self.k+2)
 		for i in range(min(self.k+2, len(self.directory))):
 			newDir[i] = self.directory[i]
 			newSizes[i] = self.treeSizes[i]
@@ -358,7 +350,6 @@ class BalancedSearchForest:
 	Recursively visit each node in a tree and collect list of displacements
 	If the index of the tree being searched does not match the expected index of a key, 
 	add the key value to displacement list
-
 	Input: current node, index of tree being validated, list of displacements
 	Output: complete list of displaced nodes in the tree 
 	"""
@@ -377,7 +368,6 @@ class BalancedSearchForest:
 	"""
 	Adjust P:
 	Assign a new size to the possible-range-intervals and update related values
-
 	Input: value to assign P to 
 	Output: void
 	"""
@@ -398,7 +388,6 @@ class BalancedSearchForest:
 	The larger adjustment is selected between two options
 	Direction parameter indicates if the range is growing or shrinking
 	d<0 is growing, d>0 is shrinking 
-
 	Input: enumerated direction value
 	Output: void 
 	"""
@@ -431,7 +420,6 @@ class BalancedSearchForest:
 	The larger adjustment is selected between two options
 	Direction parameter indicates if the range is growing or shrinking
 	d>0 is growing, d<0 is shrinking 
-
 	Input: enumerated direction value
 	Output: void 
 	"""
@@ -465,34 +453,37 @@ class BalancedSearchForest:
 	"""
 	def insertInTree(self, index, key):
 		self.incrementTreeSize(index)
+		if self.directory[index] is None:
+			self.directory[index] = AVLTree()
 		self.directory[index].insert(key)
 		if self.treeSizes[index] > self.t+1:				
 				self.balanceDepth += 1
-				if self.balanceDepth >= self.t:
-					self.worstCaseBalance(index)
-				else:
-					self.overflowBalance(index)	
+				self.overflowBalance(index)	
 		
 
 	"""
 	Delete in Tree:
 	A node with the corresponding key value is removed from a specific tree
 	It is assumed that the key exists in the tree.
-
 	Input: index of the tree, key value of node to be deleted
 	Output: void
 	"""
 	def deleteInTree(self, index, key):
-		startCount = self.directory[index].elements_count	
+	
+		if self.directory[index] is None:
+			return	
+
+		startCount = self.directory[index].elements_count
 		self.directory[index].remove(key)
 		if startCount > self.directory[index].elements_count:
 			self.decrementTreeSize(index)
+		if self.treeSizes[index] == 0:
+			self.directory[index] = None
 			
 
 	"""
 	Get Index:
 	Hash function that returns the index of the tree that a key belongs in 
-
 	Input: key value
 	Output: index of the tree that the key belongs in
 	"""
@@ -512,31 +503,28 @@ class BalancedSearchForest:
 	"""
 	Tree Min:
 	Return the node associated with the smallest key value in a given tree
-
 	Input: index of tree
 	Output: minimum key node. If tree is empty, None
 	"""
 	def treeMin(self, index):
-		if self.directory[index].root is not None:
+		if self.directory[index] is not None:
 			return self.directory[index].minimum()
 		return None
 	
 	"""
 	Tree Max:
 	Return the node associated with the largest key value in a given tree
-
 	Input: index of tree
 	Output: maximum key node. If tree is empty, None
 	"""
 	def treeMax(self, index):
-		if self.directory[index].root is not None:
+		if self.directory[index] is not None:
 			return self.directory[index].maximum()
 		return None
 
 	"""
 	Node Min:
 	Starting at a given node with key k, find the node with the smallest key < k
-
 	Input: index of tree
 	Output: node with smallest key less than root. If no left children exist, None
 	"""
@@ -549,7 +537,6 @@ class BalancedSearchForest:
 	"""
 	Node Max:
 	Starting at a given node with key k, find the node with the largest key > k
-
 	Input: index of tree
 	Output: node with largest key greater than root. If no right children exist, None
 	"""
@@ -562,7 +549,6 @@ class BalancedSearchForest:
 	"""
 	Increment Tree Size:
 	Increase the size of a given tree by 1 in the directory of tree sizes.
-
 	Input: index of tree
 	Output: None
 	"""
@@ -572,7 +558,6 @@ class BalancedSearchForest:
 	"""
 	Decrement Tree Size:
 	Decrease the size of a given tree by 1 in the directory of tree sizes.
-
 	Input: index of tree
 	Output: None
 	"""
@@ -582,7 +567,6 @@ class BalancedSearchForest:
 	"""
 	Increment Forest Size:
 	Increase the size of the forest and update the threshold for tree sizes
-
 	Input: index of tree
 	Output: None
 	"""
@@ -596,7 +580,6 @@ class BalancedSearchForest:
 	"""
 	Decrement Forest Size:
 	Decrease the size of the forest and update the threshold for tree sizes
-
 	Input: index of tree
 	Output: None
 	"""
@@ -610,7 +593,6 @@ class BalancedSearchForest:
 	"""
 	calcThreshold:
 	Calculate the current size threshold for trees based on the total number of elements
-
 	Input: none
 	Output: updated threshold value
 	"""
