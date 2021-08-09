@@ -299,23 +299,20 @@ class BalancedSearchForest:
 	If the offending tree is an outer-tree, the endpoints will be chosen from existing minimum keys
 	After these values have been updated,
 	Recursive balance depth is set to 0 and displaced nodes are reassigned
+	This is in no way practical, and only included for performance analysis reasons. 
 	
 	Input: index of offending tree
 	Output: void
 	"""
 	def worstCaseBalance(self, index):
-		print("WORST CASE")
-		if index == 0:
-			#index 0's min will be > 0 
-			self.a = self.treeMin(0).key
-		if index == self.k+1:
-			#Don't want to overcorrect b since theres no cap
-			self.b = self.treeMin(self.k+1).key
+		self.a = self.minimum().key
+		self.b = self.maximum().key
 		
 		self.adjustP(self.t)
 		
-		self.reassign()
 		self.balanceDepth = 0
+		self.reassign()
+		
 
 	"""
 	Reassign:
@@ -339,13 +336,11 @@ class BalancedSearchForest:
 				for dis in tempDis:
 					self.deleteInTree(i, dis)
 					displacements.append(dis)
-			
 		newDir = []
 		newSizes = []
 		for i in range(self.k+2):
 			newDir.append(AVLTree())
 			newSizes.append(0)
-
 		for i in range(min(self.k+2, len(self.directory))):
 			newDir[i] = self.directory[i]
 			newSizes[i] = self.treeSizes[i]
@@ -427,7 +422,7 @@ class BalancedSearchForest:
 				return
 
 		self.a = a
-		self.k = math.ceil((self.b-self.a)/self.p)
+		self.p = (self.b-self.a)/self.k
 
 
 	"""
@@ -473,7 +468,10 @@ class BalancedSearchForest:
 		self.directory[index].insert(key)
 		if self.treeSizes[index] > self.t+1:				
 				self.balanceDepth += 1
-				self.overflowBalance(index)	
+				if self.balanceDepth >= self.t:
+					self.worstCaseBalance(index)
+				else:
+					self.overflowBalance(index)	
 		
 
 	"""
