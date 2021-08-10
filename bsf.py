@@ -287,6 +287,7 @@ class BalancedSearchForest:
 		self.reassign()
 		self.balanceDepth -= 1
 
+
 	"""
 	Worst Case Balance:
 	A safety net to prevent expensive balancing when recursive depth equals log(n)
@@ -326,9 +327,10 @@ class BalancedSearchForest:
 		displacements = []
 		for i in range(len(self.directory)):
 			if self.directory[i] is not None:
-				tempDis = []
-				self.validateTree(self.directory[i].root, i, tempDis)
-				for dis in tempDis:
+				tempDisList = []
+				minDis = self.findMinDisplacementValue(i)
+				self.validateTree(self.directory[i].root, i, tempDisList, minDis)
+				for dis in tempDisList:
 					self.deleteInTree(i, dis)
 					displacements.append(dis)
 		newDir = [None] * (self.k+2)
@@ -353,17 +355,22 @@ class BalancedSearchForest:
 	Input: current node, index of tree being validated, list of displacements
 	Output: complete list of displaced nodes in the tree 
 	"""
-	def validateTree(self, node, index, dis):
-		if node.left is not None:
-			self.validateTree(node.left,index, dis)
+	def validateTree(self, node, index, dis, minDis):
+		if node.left is not None and node.key>=minDis:
+			self.validateTree(node.left,index, dis,minDis)
 
 		if node.right is not None:
-			self.validateTree(node.right,index, dis)
+			self.validateTree(node.right,index, dis,minDis)
 
 		expected = self.getIndex(node.key)
 		if expected != index:
 			dis.append(node.key)
 
+	def findMinDisplacementValue(self, index):
+		if index == 0 or index == self.k+1:
+			return 0
+
+		return ((index+1) * self.p) + self.a
 
 	"""
 	Adjust P:
@@ -382,6 +389,7 @@ class BalancedSearchForest:
 			adjustA(-1)
 			adjustB(1)
 
+
 	"""
 	Adjust A:
 	Assign a new lower endpoint to the forest range.
@@ -391,6 +399,7 @@ class BalancedSearchForest:
 	Input: enumerated direction value
 	Output: void 
 	"""
+
 	def adjustA(self, direction):
 		a = self.a 
 		if direction < 0:
@@ -440,8 +449,7 @@ class BalancedSearchForest:
 				return
 		self.b = b
 		self.k = math.ceil((self.b-self.a)/self.p)
-
-
+	
 	"""
 	Insert In Tree:
 	A key is inserted into a specfic tree in the forest. 
